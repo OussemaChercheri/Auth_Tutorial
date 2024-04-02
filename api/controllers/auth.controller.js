@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import Role from "../models/Role.js";
 import User from "../models/user.js";
 import { CreateError } from '../utils/error.js';
@@ -29,7 +30,10 @@ export const register = async (req, res, next) => {
 
 export  const login = async (req,res,next)=> {
     try {
-        const user = await User.findOne({email: req.body.email});
+        const user = await User.findOne({email: req.body.email})
+        .populate("roles", "role");
+
+        const { roles } = user;
         if (!user){
             return next(CreateError(404,'user not found'));
         }
@@ -37,7 +41,17 @@ export  const login = async (req,res,next)=> {
         if(!isPasswordCorrect){
             return next(CreateError(403,'Wrong password'));
         }
-        return next(CreateSuccess(200, "login successfully"));
+        const token = jwt.sign(
+            {userId : user._id, isAdmin: user.isAdmin, roles: roles},
+            process.env.JWT_SECRET
+        )
+        res.cookie("access_token", token, {httpOnly: true})
+        .status(200)
+        .json({
+            status: 200,
+            message: "Login Success",
+            data: user
+        })
     } catch (error) {
         return next(CreateError(500,'An error occurred during registration'));
     }
