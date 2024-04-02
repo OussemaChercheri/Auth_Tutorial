@@ -1,11 +1,12 @@
 import bcrypt from 'bcryptjs';
 import Role from "../models/Role.js";
 import User from "../models/user.js";
+import { CreateError } from '../utils/error.js';
+import { CreateSuccess } from '../utils/success.js';
 
 export const register = async (req, res, next) => {
     try {
         const role = await Role.find({ role: 'User' });
-
         const salt = await bcrypt.genSalt(10);
         const hashPassword = await bcrypt.hash(req.body.password, salt);
         const newUser = new User({
@@ -18,10 +19,10 @@ export const register = async (req, res, next) => {
         });
 
         await newUser.save();
-        return res.status(200).send('User registered');
+        return next(CreateSuccess(200, "User created successfully"));
     } catch (error) {
         console.error(error);
-        return res.status(500).send('An error occurred during registration');
+        return next(CreateError(500,'An error occurred during registration'));
     }
 };
 
@@ -30,14 +31,14 @@ export  const login = async (req,res,next)=> {
     try {
         const user = await User.findOne({email: req.body.email});
         if (!user){
-            return res.status(404).send("User not found")
+            return next(CreateError(404,'user not found'));
         }
         const isPasswordCorrect = await bcrypt.compare(req.body.password, user.password);
         if(!isPasswordCorrect){
-            return res.status(403).send("Wrong Password");
+            return next(CreateError(403,'Wrong password'));
         }
-        return res.status(200).send('user logged in')
+        return next(CreateSuccess(200, "login successfully"));
     } catch (error) {
-        return res.status(500).send("Something went wrong!");
+        return next(CreateError(500,'An error occurred during registration'));
     }
 }
