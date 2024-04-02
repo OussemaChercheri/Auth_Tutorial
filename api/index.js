@@ -1,9 +1,11 @@
 import dotenv from 'dotenv';
 import express from 'express';
 import mongoose from 'mongoose';
+import roleRoute from './routes/role.js';
 
 const app = express();
 dotenv.config();
+app.use(express.json());
 
 //DB Connection
 const connectMongodb = async ()=>{
@@ -14,6 +16,8 @@ const connectMongodb = async ()=>{
         throw error;
     }
 }
+
+app.use("/api/role", roleRoute);
 
 app.listen(process.env.PORT, ()=>{
     connectMongodb();
